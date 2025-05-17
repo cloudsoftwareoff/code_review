@@ -1,0 +1,107 @@
+# Firestore Database Schema
+
+## Collections
+
+### users
+Stores information about authenticated users.
+
+| Field | Type | Description |
+|-------|------|-------------|
+| uid | string | Firebase Auth user ID (document ID) |
+| github_user_id | number | GitHub user ID |
+| username | string | GitHub username |
+| avatar_url | string | URL to user's GitHub avatar |
+| name | string (nullable) | User's display name |
+| bio | string (nullable) | User's GitHub bio |
+| last_login | timestamp | When the user last logged in |
+
+### repositories
+Stores information about GitHub repositories.
+
+| Field | Type | Description |
+|-------|------|-------------|
+| id | string | Composite ID: `{github_user_id}_{repo_id}` (document ID) |
+| github_id | number | GitHub repository ID |
+| owner_uid | string | Firebase Auth user ID of the owner |
+| name | string | Repository name |
+| full_name | string | Full repository name (username/repo) |
+| description | string (nullable) | Repository description |
+| html_url | string | URL to the repository on GitHub |
+| stargazers_count | number | Number of stars |
+| watchers_count | number | Number of watchers |
+| language | string (nullable) | Primary language used |
+| fork | boolean | Whether the repository is a fork |
+| created_at | timestamp | When the repository was created |
+| updated_at | timestamp | When the repository was last updated |
+| last_synced | timestamp | When the data was last updated in Firestore |
+
+### pull_requests
+Stores information about pull requests for repositories.
+
+| Field | Type | Description |
+|-------|------|-------------|
+| id | string | Composite ID: `{repo_github_id}_{pr_id}` (document ID) |
+| repo_id | number | GitHub repository ID |
+| pr_id | number | GitHub pull request ID |
+| number | number | Pull request number in the repository |
+| title | string | Pull request title |
+| html_url | string | URL to the pull request on GitHub |
+| user | object | Information about the PR creator |
+| user.login | string | GitHub username of the PR creator |
+| user.avatar_url | string | URL to the PR creator's avatar |
+| user.html_url | string | URL to the PR creator's GitHub profile |
+| state | string | Pull request state (e.g., "open", "closed", "merged") |
+| created_at | timestamp | When the PR was created |
+| updated_at | timestamp | When the PR was last updated |
+| body | string | Content of the pull request |
+| last_synced | timestamp | When the data was last updated in Firestore |
+
+### pull_request_reviews
+Stores information about reviews on pull requests.
+
+| Field | Type | Description |
+|-------|------|-------------|
+| id | string | Composite ID: `{repo_github_id}_{pr_id}_{review_id}` (document ID) |
+| pr_id | string | Pull request composite ID |
+| review_id | number | GitHub review ID |
+| user | object | Information about the reviewer |
+| user.login | string | GitHub username of the reviewer |
+| user.avatar_url | string | URL to the reviewer's avatar |
+| state | string | Review state (e.g., "APPROVED", "CHANGES_REQUESTED", "COMMENTED") |
+| body | string | Review comment text |
+| submitted_at | timestamp | When the review was submitted |
+| commit_id | string | SHA of the commit that was reviewed |
+| last_synced | timestamp | When the data was last updated in Firestore |
+
+## Security Rules
+
+```
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+    // Users can only read and write their own user data
+    match /users/{userId} {
+      allow read, write: if request.auth != null && request.auth.uid == userId;
+    }
+    
+    // Users can only read and write repositories they own
+    match /repositories/{repoId} {
+      allow read, write: if request.auth != null && 
+                           resource.data.owner_uid == request.auth.uid;
+    }
+    
+    // Users can read all pull requests but only write to PRs of repos they own
+    match /pull_requests/{prId} {
+      allow read: if request.auth != null;
+      allow write: if request.auth != null && 
+                     get(/databases/$(database)/documents/repositories/$(resource.data.repo_id)).data.owner_uid == request.auth.uid;
+    }
+    
+    // Users can read all reviews but only write reviews if they own the repository
+    match /pull_request_reviews/{reviewId} {
+      allow read: if request.auth != null;
+      allow write: if request.auth != null && 
+                     get(/databases/$(database)/documents/pull_requests/$(resource.data.pr_id)).data.repo_owner_uid == request.auth.uid;
+    }
+  }
+}

@@ -1,125 +1,56 @@
-import { useState, useEffect } from 'react'
-import { supabase } from './lib/supabaseClient'
-import { signInWithGitHub, getGitHubClient, storeGitHubRepos } from './components/GitHubAuth'
-import RepoList from './components/RepoList'
-import PRList from './components/PRList'
-import CodeReview from './components/CodeReview'
+import { useState, useEffect } from 'react';
+import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-dom';
+import Login from './components/Login';
+import Dashboard from './components/Dashboard';
+import CodeReviewScreen from './components/CodeReviewScreen';
+import WelcomeScreen from './components/WelcomeScreen';
+import './App.css';
+import { auth } from './lib/firebaseClient';
 
 function App() {
-  const [session, setSession] = useState(null)
-  const [repos, setRepos] = useState([])
-  const [selectedRepo, setSelectedRepo] = useState(null)
-  const [prs, setPRs] = useState([])
-  const [selectedPR, setSelectedPR] = useState(null)
-  const [review, setReview] = useState(null)
+  const [user, setUser] = useState(null);
+  const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    supabase.auth.getSession().then(({ data: { session } }) => {
-      setSession(session)
-      if (session) fetchRepos()
-    })
+    // Listen for auth state changes
+    const unsubscribe = auth.onAuthStateChanged((firebaseUser) => {
+      setUser(firebaseUser);
+      setLoading(false);
+    });
 
-    const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, session) => {
-      setSession(session)
-    })
+    return () => unsubscribe();
+  }, []);
 
-    return () => subscription.unsubscribe()
-  }, [])
-
-  const fetchRepos = async () => {
-    try {
-      const octokit = await getGitHubClient()
-      const { data } = await octokit.request('GET /user/repos', {
-        sort: 'updated',
-        direction: 'desc'
-      })
-      
-      await storeGitHubRepos(data)
-      setRepos(data)
-    } catch (error) {
-      console.error('Error fetching repos:', error)
-    }
-  }
-
-  const fetchPRs = async (repo) => {
-    try {
-      const octokit = await getGitHubClient()
-      const { data } = await octokit.request('GET /repos/{owner}/{repo}/pulls', {
-        owner: repo.owner.login,
-        repo: repo.name,
-        state: 'open'
-      })
-      setPRs(data)
-      setSelectedRepo(repo)
-      setSelectedPR(null)
-      setReview(null)
-    } catch (error) {
-      console.error('Error fetching PRs:', error)
-    }
-  }
-
-  const analyzePR = async (pr) => {
-    try {
-      setSelectedPR(pr)
-      setReview(null)
-      
-      const { data: { user } } = await supabase.auth.getUser()
-      const octokit = await getGitHubClient()
-      
-      // Get PR details
-      const { data: prData } = await octokit.request('GET /repos/{owner}/{repo}/pulls/{pull_number}', {
-        owner: selectedRepo.owner.login,
-        repo: selectedRepo.name,
-        pull_number: pr.number
-      })
-      
-      // Get changed files
-      const { data: files } = await octokit.request('GET /repos/{owner}/{repo}/pulls/{pull_number}/files', {
-        owner: selectedRepo.owner.login,
-        repo: selectedRepo.name,
-        pull_number: pr.number
-      })
-      
-      // Store in Supabase and get AI review
-      const { data: review, error } = await supabase.functions.invoke('analyze-pr', {
-        body: {
-          user_id: user.id,
-          repo_id: selectedRepo.id,
-          pr_data: prData,
-          files: files
-        }
-      })
-      
-      if (error) throw error
-      setReview(review)
-    } catch (error) {
-      console.error('Error analyzing PR:', error)
-    }
+  if (loading) {
+    return <div className="app-loading">Loading...</div>;
   }
 
   return (
-    <div className="container">
-      {!session ? (
-        <button onClick={signInWithGitHub}>Sign in with GitHub</button>
-      ) : (
-        <>
-          <h1>Code Review Assistant</h1>
-          <div className="layout">
-            <RepoList repos={repos} onSelect={fetchPRs} />
-            {selectedRepo && (
-              <PRList 
-                prs={prs} 
-                repo={selectedRepo} 
-                onSelect={analyzePR} 
-                selectedPR={selectedPR}
-              />
-            )}
-            {review && <CodeReview review={review} />}
-          </div>
-        </>
-      )}
-    </div>
-  )
+    <Router>
+      <div className="app-container">
+        <Routes>
+          <Route
+            path="/"
+            element={<WelcomeScreen />}
+          />
+          <Route
+            path="/login"
+            element={!user ? <Login /> : <Navigate to="/dashboard" />}
+          />
+          <Route
+            path="/dashboard"
+            element={user ? <Dashboard /> : <Navigate to="/login" />}
+          />
+          <Route
+            path="/review/:repoFullName/:prNumber"
+            element={user ? <CodeReviewScreen user={user} /> : <Navigate to="/login" />}
+          />
+          {/* Redirect any other paths to welcome screen */}
+          <Route path="*" element={<Navigate to="/" />} />
+        </Routes>
+      </div>
+    </Router>
+  );
 }
 
-export default App
+export default App;
