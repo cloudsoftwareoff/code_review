@@ -21,11 +21,11 @@ const Login = () => {
       
       const result = await signInWithPopup(auth, provider);
       
-      // Get the GitHub access token from the credential
+      // Get the GitHub access token 
       const credential = GithubAuthProvider.credentialFromResult(result);
       const accessToken = credential.accessToken;
       
-      // Store the access token in localStorage for use in API requests
+      // Store the access token in localStorage
       localStorage.setItem('github_access_token', accessToken);
       
       navigate('/dashboard');

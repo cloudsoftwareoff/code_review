@@ -1,11 +1,15 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import PullRequestsList from './PullRequestsList';
+import FileViewer from './FileViewer';
 
 function RepoList({ repos, accessToken }) {
   const [filter, setFilter] = useState('');
   const [sort, setSort] = useState('updated');
   const [selectedRepo, setSelectedRepo] = useState(null);
-  const [viewMode, setViewMode] = useState('repos'); // 'repos' or 'pullRequests'
+  const [viewMode, setViewMode] = useState('repos'); // 'repos', 'pullRequests', or 'files'
+  const [repoContents, setRepoContents] = useState([]);
+  const [selectedFile, setSelectedFile] = useState(null);
+  const [currentPath, setCurrentPath] = useState(''); // Track current directory path
 
   // Filter repos by name or description
   const filteredRepos = repos.filter(repo => 
@@ -56,6 +60,37 @@ function RepoList({ repos, accessToken }) {
     return languageClasses[language] || 'bg-gray-100 text-gray-800';
   };
 
+  // Fetch repository contents
+  const fetchRepoContents = async (repo, path = '') => {
+    try {
+      const url = `https://api.github.com/repos/${repo.owner.login}/${repo.name}/contents/${path}`;
+      const response = await fetch(url, {
+        headers: {
+          Authorization: `Bearer ${accessToken}`,
+          Accept: 'application/vnd.github.v3+json',
+        },
+      });
+
+      if (!response.ok) {
+        throw new Error(`Failed to fetch repo contents: ${response.statusText}`);
+      }
+
+      const data = await response.json();
+      setRepoContents(Array.isArray(data) ? data : [data]);
+    } catch (error) {
+      console.error('Error fetching repo contents:', error);
+      setRepoContents([]);
+    }
+  };
+
+  // Handle view repo contents
+  const handleViewContents = (repo) => {
+    setSelectedRepo(repo);
+    setViewMode('files');
+    setCurrentPath('');
+    fetchRepoContents(repo, '');
+  };
+
   // Handle view pull requests
   const handleViewPullRequests = (repo) => {
     setSelectedRepo(repo);
@@ -65,10 +100,134 @@ function RepoList({ repos, accessToken }) {
   // Handle back to repos
   const handleBackToRepos = () => {
     setSelectedRepo(null);
+    setSelectedFile(null);
     setViewMode('repos');
+    setRepoContents([]);
+    setCurrentPath('');
   };
 
-  // If we're viewing pull requests for a specific repo
+  // Handle directory navigation
+  const handleNavigateDirectory = (item) => {
+    if (item.type === 'dir') {
+      const newPath = currentPath ? `${currentPath}/${item.name}` : item.name;
+      setCurrentPath(newPath);
+      fetchRepoContents(selectedRepo, newPath);
+    } else if (item.type === 'file') {
+      setSelectedFile(item);
+    }
+  };
+
+  // Handle back to previous directory
+  const handleBackToParent = () => {
+    const pathParts = currentPath.split('/');
+    const newPath = pathParts.slice(0, -1).join('/');
+    setCurrentPath(newPath);
+    fetchRepoContents(selectedRepo, newPath);
+    setSelectedFile(null);
+  };
+
+  // If viewing files for a specific repo
+  if (viewMode === 'files' && selectedRepo) {
+    return (
+      <div className="bg-violet-50 min-h-screen p-6">
+        <div className="max-w-7xl mx-auto">
+          <div className="mb-6 flex items-center">
+            <button
+              onClick={handleBackToRepos}
+              className="flex items-center text-violet-700 hover:text-violet-900 font-medium mr-4"
+            >
+              <svg className="w-5 h-5 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M15 19l-7-7 7-7" />
+              </svg>
+              Back to Repositories
+            </button>
+            {currentPath && (
+              <button
+                onClick={handleBackToParent}
+                className="flex items-center text-violet-700 hover:text-violet-900 font-medium"
+              >
+                <svg className="w-5 h-5 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M15 19l-7-7 7-7" />
+                </svg>
+                Back to Parent
+              </button>
+            )}
+          </div>
+          
+          <div className="mb-6">
+            <h2 className="text-2xl font-bold text-violet-800">{selectedRepo.name}</h2>
+            {selectedRepo.description && (
+              <p className="text-gray-700 mt-1">{selectedRepo.description}</p>
+            )}
+            <div className="mt-2 flex flex-wrap items-center gap-2">
+              <span className={`text-xs px-2 py-1 rounded-full ${selectedRepo.private ? 'bg-red-100 text-red-800' : 'bg-green-100 text-green-800'}`}>
+                {selectedRepo.private ? 'Private' : 'Public'}
+              </span>
+              {selectedRepo.language && (
+                <span className={`px-2 py-1 text-xs rounded-full ${getLanguageClass(selectedRepo.language)}`}>
+                  {selectedRepo.language}
+                </span>
+              )}
+              <span className="text-sm text-gray-500 flex items-center">
+                <svg className="w-4 h-4 mr-1" fill="currentColor" viewBox="0 0 20 20">
+                  <path d="M9.049 2.927c.3-.921 1.603-.921 1.902 0l1.07 3.292a1 1 0 00.95.69h3.462c.969 0 1.371 1.24.588 1.81l-2.8 2.034a1 1 0 00-.364 1.118l1.07 3.292c.3.921-.755 1.688-1.54 1.118l-2.8-2.034a1 1 0 00-1.175 0l-2.8 2.034c-.784.57-1.838-.197-1.539-1.118l1.07-3.292a1 1 0 00-.364-1.118L2.98 8.72c-.783-.57-.38-1.81.588-1.81h3.461a1 1 0 00.951-.69l1.07-3.292z" />
+                </svg>
+                {selectedRepo.stargazers_count}
+              </span>
+            </div>
+            {currentPath && (
+              <p className="text-sm text-gray-600 mt-2">Current path: {currentPath}</p>
+            )}
+          </div>
+          
+          {selectedFile ? (
+            <FileViewer
+              file={selectedFile}
+              repo={selectedRepo}
+              accessToken={accessToken}
+              onBack={() => setSelectedFile(null)}
+            />
+          ) : (
+            <div className="bg-white rounded-lg shadow-md overflow-hidden p-6">
+              <h3 className="text-lg font-semibold text-violet-800 mb-4">Repository Contents</h3>
+              <ul className="space-y-2">
+                {repoContents.map(item => (
+                  <li
+                    key={item.sha}
+                    className="flex items-center justify-between p-3 hover:bg-gray-50 rounded-lg cursor-pointer"
+                    onClick={() => handleNavigateDirectory(item)}
+                  >
+                    <div className="flex items-center">
+                      <svg
+                        className="w-5 h-5 mr-2 text-gray-500"
+                        fill="none"
+                        stroke="currentColor"
+                        viewBox="0 0 24 24"
+                        xmlns="http://www.w3.org/2000/svg"
+                      >
+                        {item.type === 'dir' ? (
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M3 7v10a2 2 0 002 2h14a2 2 0 002-2V9a2 2 0 00-2-2h-6l-2-2H5a2 2 0 00-2 2z" />
+                        ) : (
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l4.414 4.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+                        )}
+                      </svg>
+                      <span className="text-gray-800">{item.name}</span>
+                    </div>
+                    <span className="text-sm text-gray-500">{item.type === 'dir' ? 'Directory' : 'File'}</span>
+                  </li>
+                ))}
+              </ul>
+              {repoContents.length === 0 && (
+                <p className="text-gray-500 text-center">No contents found in this directory.</p>
+              )}
+            </div>
+          )}
+        </div>
+      </div>
+    );
+  }
+
+  // If viewing pull requests for a specific repo
   if (viewMode === 'pullRequests' && selectedRepo) {
     return (
       <div className="bg-violet-50 min-h-screen p-6">
@@ -199,6 +358,12 @@ function RepoList({ repos, accessToken }) {
                       className="bg-green-600 hover:bg-green-700 text-white text-sm py-1 px-3 rounded transition-colors"
                     >
                       Pull Requests
+                    </button>
+                    <button 
+                      onClick={() => handleViewContents(repo)}
+                      className="bg-blue-600 hover:bg-blue-700 text-white text-sm py-1 px-3 rounded transition-colors"
+                    >
+                      View Contents
                     </button>
                   </div>
                   <div className="flex items-center text-sm text-gray-500">

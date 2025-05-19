@@ -5,8 +5,8 @@ import { db, auth } from '../lib/firebaseClient';
 import Prism from 'prismjs';
 import 'prismjs/themes/prism.css';
 import 'prismjs/components/prism-diff';
-import 'prismjs/components/prism-javascript'; // Add for JS highlighting
-import 'prismjs/components/prism-python'; // Add for Python highlighting
+import 'prismjs/components/prism-javascript';
+import 'prismjs/components/prism-python'; 
 import { GoogleGenerativeAI } from '@google/generative-ai';
 
 const genAI = new GoogleGenerativeAI("AIzaSyDavQ5TVmHXEeXeIe0GpSaUNzQqniBxBZo");
