@@ -1,10 +1,14 @@
-import { useEffect } from 'react';
+import { useEffect, useRef } from 'react';
 import Prism from 'prismjs';
 import DiffViewer from './DiffViewer';
 import ReviewList from './ReviewList';
 import ReviewForm from './ReviewForm';
 import { fetchPRDetails } from '../../utils/pull-requests/fetchPRDetails';
-
+import ReactMarkdown from 'react-markdown';
+import 'prismjs/themes/prism.css';
+import 'prismjs/components/prism-javascript';
+import 'prismjs/components/prism-python';
+import remarkGfm from 'remark-gfm';
 function PullRequestItem({ pr, repo, accessToken, expandedPR, setExpandedPR, navigate, setPullRequests }) {
   useEffect(() => {
     if (expandedPR === pr.number) {
@@ -23,7 +27,23 @@ function PullRequestItem({ pr, repo, accessToken, expandedPR, setExpandedPR, nav
     const year = date.getFullYear();
     return `${day} ${month} ${year}`;
   };
+  const CodeBlock = ({ language, value }) => {
+    const codeRef = useRef(null);
 
+    useEffect(() => {
+      if (codeRef.current) {
+        Prism.highlightElement(codeRef.current);
+      }
+    }, [value]);
+
+    return (
+      <pre className="bg-gray-800 text-white p-4 rounded-lg overflow-x-auto">
+        <code ref={codeRef} className={`language-${language || 'javascript'}`}>
+          {value}
+        </code>
+      </pre>
+    );
+  };
   return (
     <div className="bg-white rounded-lg shadow-md overflow-hidden">
       <div
@@ -73,13 +93,46 @@ function PullRequestItem({ pr, repo, accessToken, expandedPR, setExpandedPR, nav
             </div>
           )}
 
-          {pr.diff && <DiffViewer diff={pr.diff} />}
+          {pr.diff ? (<DiffViewer diff={pr.diff} />):(<p>Loading...</p>)}
 
           {pr.aiAnalysis && (
             <div className="mb-4">
               <h5 className="text-sm font-semibold text-gray-700 mb-2">AI Analysis:</h5>
               <div className="bg-white rounded border border-gray-200 p-3 overflow-auto max-h-96">
-                <p className="text-sm text-gray-600 whitespace-pre-line">{pr.aiAnalysis}</p>
+                
+                       <ReactMarkdown
+                                      remarkPlugins={[remarkGfm]}
+                                      components={{
+                                        code({ node, inline, className, children, ...props }) {
+                                          const match = /language-(\w+)/.exec(className || '');
+                                          return !inline && match ? (
+                                            <CodeBlock language={match[1]} value={String(children).replace(/\n$/, '')} />
+                                          ) : (
+                                            <code className="bg-gray-200 text-violet-800 px-1 rounded" {...props}>
+                                              {children}
+                                            </code>
+                                          );
+                                        },
+                                        h1: ({ children }) => <h1 className="text-2xl font-bold text-violet-900 mt-6 mb-4">{children}</h1>,
+                                        h2: ({ children }) => <h2 className="text-xl font-semibold text-violet-800 mt-5 mb-3">{children}</h2>,
+                                        h3: ({ children }) => <h3 className="text-lg font-medium text-violet-700 mt-4 mb-2">{children}</h3>,
+                                        p: ({ children }) => <p className="text-gray-700 mb-4">{children}</p>,
+                                        ul: ({ children }) => <ul className="list-disc list-inside text-gray-700 mb-4">{children}</ul>,
+                                        ol: ({ children }) => <ol className="list-decimal list-inside text-gray-700 mb-4">{children}</ol>,
+                                        li: ({ children }) => <li className="mb-1">{children}</li>,
+                                        blockquote: ({ children }) => (
+                                          <blockquote className="border-l-4 border-violet-500 pl-4 italic text-gray-600 mb-4">{children}</blockquote>
+                                        ),
+                                        table: ({ children }) => <table className="table-auto border-collapse border border-gray-300 mb-4">{children}</table>,
+                                        thead: ({ children }) => <thead className="bg-gray-200">{children}</thead>,
+                                        th: ({ children }) => <th className="border border-gray-300 px-4 py-2 text-left">{children}</th>,
+                                        td: ({ children }) => <td className="border border-gray-300 px-4 py-2">{children}</td>,
+                                      }}
+                                    >
+                                      {pr.aiAnalysis}
+                                    </ReactMarkdown>
+                
+                {/* <p className="text-sm text-gray-600 whitespace-pre-line">{pr.aiAnalysis}</p> */}
               </div>
             </div>
           )}

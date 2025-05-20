@@ -108,7 +108,7 @@ function FileViewer({ file, repo, accessToken, onBack }) {
 
       const prompt = `
         Analyze the following code from a file named "${file.name}" in a ${repo.language} repository. 
-        Provide specific recommendations to improve the code, including:
+        Provide a recommendations to improve the code, in short paragraph including:
         - Code quality improvements
         - Performance optimizations
         - Best practices

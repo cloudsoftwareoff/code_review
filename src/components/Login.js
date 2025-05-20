@@ -15,6 +15,7 @@ const Login = () => {
       
       const provider = new GithubAuthProvider();
       //  required scopes 
+      //
       provider.addScope('read:user');
       provider.addScope('user:email');
       provider.addScope('repo');
@@ -38,9 +39,8 @@ const Login = () => {
   };
 
   return (
-    <div className="min-h-screen flex items-center justify-center bg-gray-100">
-      <div className="bg-white p-8 rounded-xl shadow-lg max-w-md w-full">
-        <h1 className="text-3xl font-bold text-center text-gray-800 mb-6">GitHub Repository Manager</h1>
+    <div >
+      <div>
         
         {error && (
           <div className="bg-red-100 border-l-4 border-red-600 text-red-700 p-4 mb-6 rounded-lg">

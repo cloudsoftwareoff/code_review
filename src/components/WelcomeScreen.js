@@ -1,11 +1,13 @@
 import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
+import Animation from './Animation';
+import Login from './Login';
 
 export default function WelcomeScreen() {
   const navigate = useNavigate();
   const [hoveredButton, setHoveredButton] = useState(null);
   const [animationReady, setAnimationReady] = useState(false);
-
+  const [clickedLogin,setClickedLogin]=useState(false);
   useEffect(() => {
    
     setTimeout(() => setAnimationReady(true), 100);
@@ -57,6 +59,7 @@ export default function WelcomeScreen() {
             <p className="text-xl md:text-2xl text-purple-900 mb-8 max-w-xl mx-auto lg:mx-0">
               Elevate your code quality with AI-powered insights that help you ship with confidence.
             </p>
+            {clickedLogin ? (<Login/> ):(
             <div className="flex flex-col sm:flex-row space-y-4 sm:space-y-0 sm:space-x-6 justify-center lg:justify-start">
               <button
                 className={`px-8 py-4 text-lg font-medium rounded-xl transition-all duration-300 ${
@@ -66,7 +69,7 @@ export default function WelcomeScreen() {
                 }`}
                 onMouseEnter={() => setHoveredButton('login')}
                 onMouseLeave={() => setHoveredButton(null)}
-                onClick={() => handleNavigate('/login')}
+                onClick={() => setClickedLogin(true)}
               >
                 Log In
               </button>
@@ -83,72 +86,12 @@ export default function WelcomeScreen() {
                 Dashboard
               </button>
             </div>
+            )}
           </div>
           
           <div className="lg:w-1/2 flex justify-center">
             <div className={`relative transition-all duration-1000 delay-500 transform ${animationReady ? 'translate-y-0 opacity-100 rotate-0' : 'translate-y-12 opacity-0 rotate-6'}`}>
-              {/* Robot character */}
-              <div className="w-72 h-72 relative">
-                {/* Robot body */}
-                <div className="absolute w-40 h-48 bg-gradient-to-b from-gray-200 to-gray-300 rounded-2xl bottom-0 left-14 shadow-lg border-2 border-gray-100">
-                  {/* Robot chest light */}
-                  <div className="absolute w-8 h-8 bg-blue-400 rounded-full top-8 left-16 shadow-inner animate-pulse">
-                    <div className="w-6 h-6 bg-blue-300 rounded-full m-1 animate-pulse"></div>
-                  </div>
-                  
-                  {/* Robot buttons/controls */}
-                  <div className="absolute bottom-6 left-0 right-0 flex justify-center space-x-3">
-                    <div className="w-4 h-4 bg-red-500 rounded-full"></div>
-                    <div className="w-4 h-4 bg-yellow-500 rounded-full"></div>
-                    <div className="w-4 h-4 bg-green-500 rounded-full"></div>
-                  </div>
-                </div>
-                
-                {/* Robot head */}
-                <div className="absolute w-36 h-36 bg-gradient-to-b from-gray-100 to-gray-300 rounded-2xl top-0 left-16 shadow-lg border-2 border-gray-100">
-                  {/* Robot eye 1 */}
-                  <div className="absolute w-12 h-12 bg-purple-500 rounded-full top-6 left-4 flex items-center justify-center shadow-inner animate-pulse">
-                    <div className="w-8 h-8 bg-black rounded-full flex items-center justify-center">
-                      <div className="w-4 h-4 bg-white rounded-full absolute top-1 left-1"></div>
-                    </div>
-                  </div>
-                  
-                  {/* Robot eye 2 */}
-                  <div className="absolute w-12 h-12 bg-indigo-500 rounded-full top-6 right-4 flex items-center justify-center shadow-inner animate-pulse">
-                    <div className="w-8 h-8 bg-black rounded-full flex items-center justify-center">
-                      <div className="w-4 h-4 bg-white rounded-full absolute top-1 left-1"></div>
-                    </div>
-                  </div>
-                  
-                  {/* Robot mouth */}
-                  <div className="absolute w-20 h-3 bg-gray-700 rounded-full bottom-8 left-8"></div>
-                  
-                  {/* Robot antenna */}
-                  <div className="absolute w-3 h-10 bg-gray-400 rounded-full -top-8 left-16">
-                    <div className="w-5 h-5 bg-red-500 rounded-full -top-4 -left-1 absolute animate-pulse"></div>
-                  </div>
-                </div>
-                
-                {/* Robot arms */}
-                <div className="absolute w-10 h-28 bg-gradient-to-b from-gray-200 to-gray-400 rounded-full top-24 left-2 transform rotate-12 shadow-md border-2 border-gray-100">
-                  {/* Robot hand */}
-                  <div className="absolute w-12 h-12 bg-gray-300 rounded-full bottom-0 -left-1 border-2 border-gray-200"></div>
-                </div>
-                <div className="absolute w-10 h-28 bg-gradient-to-b from-gray-200 to-gray-400 rounded-full top-24 right-2 transform -rotate-12 shadow-md border-2 border-gray-100">
-                  {/* Robot hand */}
-                  <div className="absolute w-12 h-12 bg-gray-300 rounded-full bottom-0 -right-1 border-2 border-gray-200"></div>
-                </div>
-                
-                {/* Robot legs */}
-                <div className="absolute w-12 h-20 bg-gradient-to-b from-gray-300 to-gray-500 rounded-2xl bottom-0 left-18 shadow-md border-2 border-gray-200">
-                  {/* Robot foot */}
-                  <div className="absolute w-16 h-6 bg-gray-400 rounded-xl bottom-0 -left-2 border-2 border-gray-300"></div>
-                </div>
-                <div className="absolute w-12 h-20 bg-gradient-to-b from-gray-300 to-gray-500 rounded-2xl bottom-0 right-18 shadow-md border-2 border-gray-200">
-                  {/* Robot foot */}
-                  <div className="absolute w-16 h-6 bg-gray-400 rounded-xl bottom-0 -right-2 border-2 border-gray-300"></div>
-                </div>
-              </div>
+            <Animation/>
             </div>
           </div>
         </div>

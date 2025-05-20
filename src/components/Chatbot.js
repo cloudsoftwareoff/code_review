@@ -42,6 +42,7 @@ function Chatbot({ isOpen, onClose }) {
 
       const result = await model.generateContent(prompt);
       const responseText = await result.response.text();
+      setTypedResponse(responseText);
       
       // Add to chat history but don't display immediately
       const newHistory = [...chatHistory, { user: chatInput, ai: responseText }];
@@ -58,40 +59,40 @@ function Chatbot({ isOpen, onClose }) {
     }
   };
 
-  // Improved typewriter effect for chat response
-  useEffect(() => {
-    if (chatHistory.length > 0 && isTyping) {
-      const latestResponse = chatHistory[chatHistory.length - 1].ai;
-      let charIndex = 0;
-      const typingSpeed = 30; // ms per character
+  // // Improved typewriter effect for chat response
+  // useEffect(() => {
+  //   if (chatHistory.length > 0 && isTyping) {
+  //     const latestResponse = chatHistory[chatHistory.length - 1].ai;
+  //     let charIndex = 0;
+  //     const typingSpeed = 30; // ms per character
       
-      // Clear any existing interval
-      if (typingTimerRef.current) {
-        clearInterval(typingTimerRef.current);
-      }
+  //     // Clear any existing interval
+  //     if (typingTimerRef.current) {
+  //       clearInterval(typingTimerRef.current);
+  //     }
       
-      typingTimerRef.current = setInterval(() => {
-        if (charIndex < latestResponse.length) {
-          setTypedResponse(prevTyped => latestResponse.slice(0, charIndex + 1));
-          charIndex++;
-        } else {
-          clearInterval(typingTimerRef.current);
-          setIsTyping(false);
-        }
-      }, typingSpeed);
+  //     typingTimerRef.current = setInterval(() => {
+  //       if (charIndex < latestResponse.length) {
+  //         setTypedResponse(prevTyped => latestResponse.slice(0, charIndex + 1));
+  //         charIndex++;
+  //       } else {
+  //         clearInterval(typingTimerRef.current);
+  //         setIsTyping(false);
+  //       }
+  //     }, typingSpeed);
       
-      // Auto-scroll to bottom when new content is added
-      if (chatContainerRef.current) {
-        chatContainerRef.current.scrollTop = chatContainerRef.current.scrollHeight;
-      }
+  //     // Auto-scroll to bottom when new content is added
+  //     if (chatContainerRef.current) {
+  //       chatContainerRef.current.scrollTop = chatContainerRef.current.scrollHeight;
+  //     }
       
-      return () => {
-        if (typingTimerRef.current) {
-          clearInterval(typingTimerRef.current);
-        }
-      };
-    }
-  }, [chatHistory, isTyping]);
+  //     return () => {
+  //       if (typingTimerRef.current) {
+  //         clearInterval(typingTimerRef.current);
+  //       }
+  //     };
+  //   }
+  // }, [chatHistory, isTyping]);
 
   // Skip chat animation
   const handleSkipAnimation = () => {
@@ -183,7 +184,7 @@ function Chatbot({ isOpen, onClose }) {
                 </>
               )}
               
-              {/* Only show AI response section if we have a user message */}
+          
               {entry.user && (
                 <>
                   <div className="text-sm font-medium text-gray-800 dark:text-gray-200 mt-2">AI:</div>

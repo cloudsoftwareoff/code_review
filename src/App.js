@@ -7,7 +7,6 @@ import Chatbot from './components/Chatbot';
 import './App.css';
 import { auth } from './lib/firebaseClient';
 import { DashboardPage } from './pages/Dashboard';
-
 export const CodeReviewContext = createContext();
 export const useCodeReviewContext = () => useContext(CodeReviewContext);
 
@@ -18,7 +17,7 @@ function App() {
   const [context, setContext] = useState({ repo: null, file: null });
 
   useEffect(() => {
-    // Listen for auth state changes
+  
     const unsubscribe = auth.onAuthStateChanged((firebaseUser) => {
       setUser(firebaseUser);
       setLoading(false);

@@ -6,7 +6,8 @@ function RepoList({ repos, accessToken }) {
   const [filter, setFilter] = useState('');
   const [sort, setSort] = useState('updated');
   const [selectedRepo, setSelectedRepo] = useState(null);
-  const [viewMode, setViewMode] = useState('repos'); // 'repos', 'pullRequests', or 'files'
+  // 'repos', 'pullRequests', or 'files'
+  const [viewMode, setViewMode] = useState('repos'); 
   const [repoContents, setRepoContents] = useState([]);
   const [selectedFile, setSelectedFile] = useState(null);
   const [currentPath, setCurrentPath] = useState(''); 

@@ -171,7 +171,7 @@ export const fetchPRDetails = async (
       if (!storedAnalysis && diffData) {
         try {
           const model = genAI.getGenerativeModel({ model: 'gemini-1.5-flash' });
-          const prompt = `Analyze this GitHub pull request diff for potential bugs, code quality issues, and improvement suggestions. Provide a concise summary and specific recommendations:\n\n${diffData.slice(0, 4000)}`;
+          const prompt = `Analyze this GitHub pull request diff for potential bugs, code quality issues, and improvement suggestions. Provide very short recommendations in one paragraph:\n\n${diffData.slice(0, 4000)}`;
           const result = await model.generateContent(prompt);
           const response = await result.response;
           analysisData = await response.text();
