@@ -23,6 +23,7 @@ function Chatbot({ isOpen, onClose }) {
   // Fetch AI chat response
   const fetchChatResponse = async () => {
     try {
+      console.log("context ",context);
       setChatError(null);
       const model = genAI.getGenerativeModel({ model: 'gemini-1.5-flash' });
 

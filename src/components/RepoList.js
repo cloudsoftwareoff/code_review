@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import PullRequestsList from './PullRequestsList';
+import PullRequestsList from './pullRequests/PullRequestsList';
 import FileViewer from './FileViewer';
 
 function RepoList({ repos, accessToken }) {
@@ -9,7 +9,7 @@ function RepoList({ repos, accessToken }) {
   const [viewMode, setViewMode] = useState('repos'); // 'repos', 'pullRequests', or 'files'
   const [repoContents, setRepoContents] = useState([]);
   const [selectedFile, setSelectedFile] = useState(null);
-  const [currentPath, setCurrentPath] = useState(''); // Track current directory path
+  const [currentPath, setCurrentPath] = useState(''); 
 
   // Filter repos by name or description
   const filteredRepos = repos.filter(repo => 
@@ -30,7 +30,6 @@ function RepoList({ repos, accessToken }) {
     }
   });
 
-  // Format date to readable format
   const formatDate = (dateString) => {
     const date = new Date(dateString);
     const day = date.getDate();
@@ -39,7 +38,7 @@ function RepoList({ repos, accessToken }) {
     return `${day} ${month} ${year}`;
   };
 
-  // Get language class for the language badge
+  // language badge
   const getLanguageClass = (language) => {
     const languageClasses = {
       'JavaScript': 'bg-yellow-100 text-yellow-800',
@@ -83,7 +82,6 @@ function RepoList({ repos, accessToken }) {
     }
   };
 
-  // Handle view repo contents
   const handleViewContents = (repo) => {
     setSelectedRepo(repo);
     setViewMode('files');
@@ -91,13 +89,11 @@ function RepoList({ repos, accessToken }) {
     fetchRepoContents(repo, '');
   };
 
-  // Handle view pull requests
   const handleViewPullRequests = (repo) => {
     setSelectedRepo(repo);
     setViewMode('pullRequests');
   };
 
-  // Handle back to repos
   const handleBackToRepos = () => {
     setSelectedRepo(null);
     setSelectedFile(null);
@@ -117,7 +113,6 @@ function RepoList({ repos, accessToken }) {
     }
   };
 
-  // Handle back to previous directory
   const handleBackToParent = () => {
     const pathParts = currentPath.split('/');
     const newPath = pathParts.slice(0, -1).join('/');
