@@ -1,47 +1,18 @@
-import { auth } from '../lib/firebaseClient';
-import { GithubAuthProvider, signInWithPopup } from 'firebase/auth';
 import { useNavigate } from 'react-router-dom';
 import { useState } from 'react';
-
+import { handleGitHubLogin } from '../../services/auth';
 const Login = () => {
   const navigate = useNavigate();
   const [error, setError] = useState(null);
   const [loading, setLoading] = useState(false);
 
-  const handleGitHubLogin = async () => {
-    try {
-      setLoading(true);
-      setError(null);
-      
-      const provider = new GithubAuthProvider();
-      //  required scopes 
-      //
-      provider.addScope('read:user');
-      provider.addScope('user:email');
-      provider.addScope('repo');
-      
-      const result = await signInWithPopup(auth, provider);
-      
-      // Get the GitHub access token 
-      const credential = GithubAuthProvider.credentialFromResult(result);
-      const accessToken = credential.accessToken;
-      
-      // Store the access token in localStorage
-      localStorage.setItem('github_access_token', accessToken);
-      
-      navigate('/dashboard');
-    } catch (error) {
-      console.error('Login error:', error);
-      setError(error.message || 'Failed to sign in with GitHub');
-    } finally {
-      setLoading(false);
-    }
+  const onGitHubLogin = async () => {
+    await handleGitHubLogin({ navigate, setError, setLoading });
   };
 
   return (
-    <div >
+    <div>
       <div>
-        
         {error && (
           <div className="bg-red-100 border-l-4 border-red-600 text-red-700 p-4 mb-6 rounded-lg">
             <p>{error}</p>
@@ -49,7 +20,7 @@ const Login = () => {
         )}
         
         <button 
-          onClick={handleGitHubLogin} 
+          onClick={onGitHubLogin} 
           disabled={loading}
           className="w-full bg-violet-600 hover:bg-violet-700 text-white py-3 px-4 rounded-lg font-medium flex items-center justify-center"
         >

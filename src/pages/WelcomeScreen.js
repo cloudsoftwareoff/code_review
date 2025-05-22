@@ -1,9 +1,8 @@
 import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
-import Animation from './Animation';
-import Login from './Login';
-
-export default function WelcomeScreen() {
+import Animation from '../components/landing/Animation';
+import Login from '../components/landing/Login';
+export default function WelcomeScreen({user}) {
   const navigate = useNavigate();
   const [hoveredButton, setHoveredButton] = useState(null);
   const [animationReady, setAnimationReady] = useState(false);
@@ -61,7 +60,7 @@ export default function WelcomeScreen() {
             </p>
             {clickedLogin ? (<Login/> ):(
             <div className="flex flex-col sm:flex-row space-y-4 sm:space-y-0 sm:space-x-6 justify-center lg:justify-start">
-              <button
+              {!user && <button
                 className={`px-8 py-4 text-lg font-medium rounded-xl transition-all duration-300 ${
                   hoveredButton === 'login' 
                     ? 'bg-gradient-to-r from-purple-600 to-purple-800 text-white transform -translate-y-1 shadow-xl shadow-purple-500/30' 
@@ -72,8 +71,8 @@ export default function WelcomeScreen() {
                 onClick={() => setClickedLogin(true)}
               >
                 Log In
-              </button>
-              <button
+              </button>}
+             {user && <button
                 className={`px-8 py-4 text-lg font-medium rounded-xl transition-all duration-300 ${
                   hoveredButton === 'dashboard' 
                     ? 'bg-gradient-to-r from-indigo-600 to-indigo-800 text-white transform -translate-y-1 shadow-xl shadow-indigo-500/30' 
@@ -84,7 +83,7 @@ export default function WelcomeScreen() {
                 onClick={() => handleNavigate('/dashboard')}
               >
                 Dashboard
-              </button>
+              </button>}
             </div>
             )}
           </div>

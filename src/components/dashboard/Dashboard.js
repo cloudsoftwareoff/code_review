@@ -1,5 +1,5 @@
 import  UserProfile  from '../UserProfile';
-import RepoList from '../RepoList';
+import RepoList from '../repo/RepoList';
 import { DashboardHeader } from './DashboardHeader';
 import { ErrorState } from './ErrorState';
 import { LoadingState } from './LoadingState';

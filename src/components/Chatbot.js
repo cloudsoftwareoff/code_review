@@ -1,302 +1,232 @@
 import { useState, useEffect, useRef } from 'react';
-import { GoogleGenerativeAI } from '@google/generative-ai';
 import ReactMarkdown from 'react-markdown';
-import Prism from 'prismjs';
-import 'prismjs/themes/prism.css';
-import 'prismjs/components/prism-javascript';
-import 'prismjs/components/prism-python';
 import remarkGfm from 'remark-gfm';
 import { useCodeReviewContext } from '../App';
-
-const genAI = new GoogleGenerativeAI(process.env.REACT_APP_GEMINI_API_KEY);
+import { fetchChatResponse, RenderCodeBlock } from '../utils/chatbotUtils';
 
 function Chatbot({ isOpen, onClose }) {
   const [chatInput, setChatInput] = useState('');
   const [chatHistory, setChatHistory] = useState([]);
-  const [isTyping, setIsTyping] = useState(false);
-  const [typedResponse, setTypedResponse] = useState('');
   const [chatError, setChatError] = useState(null);
-  const typingTimerRef = useRef(null);
+  const [isLoading, setIsLoading] = useState(false);
   const { context } = useCodeReviewContext();
   const chatContainerRef = useRef(null);
 
-  // Fetch AI chat response
-  const fetchChatResponse = async () => {
-    try {
-      console.log("context ",context);
-      setChatError(null);
-      const model = genAI.getGenerativeModel({ model: 'gemini-1.5-flash' });
-
-      const prompt = `
-        Respond to the following user query in the context of code review${
-          context?.repo ? ` for a ${context.repo.language} repository named "${context.repo.name}"` : ''
-        }. 
-        Provide a clear, actionable answer formatted in Markdown, including code snippets where applicable.
-        Query: ${chatInput}
-        ${
-          context?.file?.content && context?.file?.name
-            ? `Reference file "${context.file.name}": \`\`\`\n${context.file.content.slice(0, 2000)}\n\`\`\``
-            : ''
-        }
-      `;
-
-      const result = await model.generateContent(prompt);
-      const responseText = await result.response.text();
-      setTypedResponse(responseText);
-      
-      // Add to chat history but don't display immediately
-      const newHistory = [...chatHistory, { user: chatInput, ai: responseText }];
-      setChatHistory(newHistory);
-      
-      // Start typewriter effect
-      setIsTyping(true);
-      setTypedResponse('');
-      
-      return responseText;
-    } catch (err) {
-      setChatError(err.message);
-      return null;
-    }
-  };
-
-  // // Improved typewriter effect for chat response
-  // useEffect(() => {
-  //   if (chatHistory.length > 0 && isTyping) {
-  //     const latestResponse = chatHistory[chatHistory.length - 1].ai;
-  //     let charIndex = 0;
-  //     const typingSpeed = 30; // ms per character
-      
-  //     // Clear any existing interval
-  //     if (typingTimerRef.current) {
-  //       clearInterval(typingTimerRef.current);
-  //     }
-      
-  //     typingTimerRef.current = setInterval(() => {
-  //       if (charIndex < latestResponse.length) {
-  //         setTypedResponse(prevTyped => latestResponse.slice(0, charIndex + 1));
-  //         charIndex++;
-  //       } else {
-  //         clearInterval(typingTimerRef.current);
-  //         setIsTyping(false);
-  //       }
-  //     }, typingSpeed);
-      
-  //     // Auto-scroll to bottom when new content is added
-  //     if (chatContainerRef.current) {
-  //       chatContainerRef.current.scrollTop = chatContainerRef.current.scrollHeight;
-  //     }
-      
-  //     return () => {
-  //       if (typingTimerRef.current) {
-  //         clearInterval(typingTimerRef.current);
-  //       }
-  //     };
-  //   }
-  // }, [chatHistory, isTyping]);
-
-  // Skip chat animation
-  const handleSkipAnimation = () => {
-    if (isTyping && chatHistory.length > 0) {
-      // Clear the typing animation
-      clearInterval(typingTimerRef.current);
-      // Set the full response immediately
-      setTypedResponse(chatHistory[chatHistory.length - 1].ai);
-      setIsTyping(false);
-    }
-  };
-
-  // Handle chat submission
   const handleChatSubmit = async (e) => {
     e.preventDefault();
-    if (!chatInput.trim()) return;
-    
-    // Add user message immediately
-    setChatHistory(prev => [...prev, { user: chatInput, ai: '' }]);
+    if (!chatInput.trim() || isLoading) return;
+
     const userInput = chatInput;
-    setChatInput(''); // Clear input field immediately
+    setChatInput('');
+    setIsLoading(true);
+    setChatHistory(prev => [...prev, { user: userInput, ai: '' }]);
     
-    // Fetch response after adding user message
-    await fetchChatResponse();
+    try {
+      await fetchChatResponse(userInput, context, setChatError, setChatHistory);
+    } finally {
+      setIsLoading(false);
+    }
   };
 
-  // Auto scroll on new messages
   useEffect(() => {
     if (chatContainerRef.current) {
       chatContainerRef.current.scrollTop = chatContainerRef.current.scrollHeight;
     }
-  }, [chatHistory, typedResponse]);
-
-  // Code block renderer with proper syntax highlighting
-  const CodeBlock = ({ language, value }) => {
-    const codeRef = useRef(null);
-
-    useEffect(() => {
-      if (codeRef.current) {
-        Prism.highlightElement(codeRef.current);
-      }
-    }, [value]); // Re-run when code value changes
-
-    return (
-      <pre className="bg-gray-800 text-white p-4 rounded-lg overflow-x-auto">
-        <code ref={codeRef} className={`language-${language || 'javascript'}`}>
-          {value}
-        </code>
-      </pre>
-    );
-  };
+  }, [chatHistory]);
 
   if (!isOpen) return null;
 
   return (
-    <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
-      <div className="bg-white dark:bg-gray-900 rounded-lg shadow-xl w-full max-w-lg p-6 h-[80vh] flex flex-col">
-        <div className="flex justify-between items-center mb-4">
-          <h3 className="text-lg font-semibold text-violet-800 dark:text-violet-200">AI Code Review Assistant</h3>
+    <div className="fixed inset-0 bg-black/60 backdrop-blur-sm flex items-center justify-center z-[100] p-4">
+      <div className="bg-white rounded-2xl shadow-2xl w-full max-w-2xl h-[85vh] flex flex-col overflow-hidden border border-gray-200">
+        {/* Header */}
+        <div className="bg-gradient-to-r from-violet-600 to-purple-600 px-6 py-4 flex items-center justify-between">
+          <div className="flex items-center space-x-3">
+            <div className="w-8 h-8 bg-white/20 rounded-lg flex items-center justify-center">
+              <svg className="w-5 h-5 text-white" fill="currentColor" viewBox="0 0 20 20">
+                <path fillRule="evenodd" d="M18 13V5a2 2 0 00-2-2H4a2 2 0 00-2 2v8a2 2 0 002 2h3l3 3 3-3h3a2 2 0 002-2zM5 7a1 1 0 011-1h8a1 1 0 110 2H6a1 1 0 01-1-1zm1 3a1 1 0 100 2h3a1 1 0 100-2H6z" clipRule="evenodd" />
+              </svg>
+            </div>
+            <div>
+              <h3 className="text-lg font-semibold text-white">AI Code Assistant</h3>
+              <p className="text-violet-100 text-sm">
+                {context?.repo ? (
+                  <span className="flex items-center space-x-2">
+                    <span>{context.repo.name}</span>
+                    {context.repo.language && (
+                      <>
+                        <span>•</span>
+                        <span>{context.repo.language}</span>
+                      </>
+                    )}
+                  </span>
+                ) : (
+                  'No repository selected'
+                )}
+              </p>
+            </div>
+          </div>
           <button
             onClick={onClose}
-            className="text-gray-600 hover:text-gray-800 dark:text-gray-400 dark:hover:text-gray-200"
+            className="text-white/80 hover:text-white hover:bg-white/10 p-2 rounded-lg transition-all duration-200"
             aria-label="Close Chatbot"
           >
-            <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+            <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M6 18L18 6M6 6l12 12" />
             </svg>
           </button>
         </div>
-        
+
+        {/* Error Display */}
         {chatError && (
-          <div className="bg-red-100 border-l-4 border-red-600 text-red-700 p-4 mb-4 rounded-lg">
-            <p>{chatError}</p>
+          <div className="mx-6 mt-4 bg-red-50 border border-red-200 text-red-800 p-4 rounded-xl flex items-start space-x-3">
+            <svg className="w-5 h-5 text-red-500 mt-0.5 flex-shrink-0" fill="currentColor" viewBox="0 0 20 20">
+              <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zM8.707 7.293a1 1 0 00-1.414 1.414L8.586 10l-1.293 1.293a1 1 0 101.414 1.414L10 11.414l1.293 1.293a1 1 0 001.414-1.414L11.414 10l1.293-1.293a1 1 0 00-1.414-1.414L10 8.586 8.707 7.293z" clipRule="evenodd" />
+            </svg>
+            <div>
+              <p className="font-medium">Error occurred</p>
+              <p className="text-sm mt-1">{chatError}</p>
+            </div>
           </div>
         )}
-        
-        <div 
+
+        {/* Chat History */}
+        <div
           ref={chatContainerRef}
-          className="flex-1 overflow-y-auto mb-4 pr-2 space-y-4"
+          className="flex-1 overflow-y-auto px-6 py-4 space-y-6"
+          style={{ scrollBehavior: 'smooth' }}
         >
+          {chatHistory.length === 0 && (
+            <div className="text-center py-12">
+              <div className="w-16 h-16 mx-auto mb-4 bg-gradient-to-br from-violet-100 to-purple-100 rounded-2xl flex items-center justify-center">
+                <svg className="w-8 h-8 text-violet-600" fill="currentColor" viewBox="0 0 20 20">
+                  <path fillRule="evenodd" d="M18 13V5a2 2 0 00-2-2H4a2 2 0 00-2 2v8a2 2 0 002 2h3l3 3 3-3h3a2 2 0 002-2zM5 7a1 1 0 011-1h8a1 1 0 110 2H6a1 1 0 01-1-1zm1 3a1 1 0 100 2h3a1 1 0 100-2H6z" clipRule="evenodd" />
+                </svg>
+              </div>
+              <h4 className="text-lg font-semibold text-gray-900 mb-2">Start a conversation</h4>
+              <p className="text-gray-500 max-w-sm mx-auto">
+                Ask me anything about your code, get reviews, explanations, or suggestions for improvements.
+              </p>
+            </div>
+          )}
+
           {chatHistory.map((entry, index) => (
-            <div key={index} className="mb-4">
+            <div key={index} className="space-y-4">
+              {/* User Message */}
               {entry.user && (
-                <>
-                  <div className="text-sm font-medium text-gray-800 dark:text-gray-200">You:</div>
-                  <p className="bg-gray-100 dark:bg-gray-800 p-3 rounded-lg text-gray-700 dark:text-gray-300">
-                    {entry.user}
-                  </p>
-                </>
+                <div className="flex justify-end">
+                  <div className="max-w-[80%] bg-gradient-to-r from-violet-600 to-purple-600 text-white p-4 rounded-2xl rounded-br-md shadow-lg">
+                    <p className="text-sm leading-relaxed">{entry.user}</p>
+                  </div>
+                </div>
               )}
-              
-          
-              {entry.user && (
-                <>
-                  <div className="text-sm font-medium text-gray-800 dark:text-gray-200 mt-2">AI:</div>
-                  <div
-                    className="bg-gray-50 dark:bg-gray-800 p-3 rounded-lg prose prose-violet dark:prose-invert max-w-none cursor-pointer"
-                    onClick={handleSkipAnimation}
-                    title="Click to skip animation"
-                  >
-                    {index === chatHistory.length - 1 && isTyping ? (
+
+              {/* AI Response */}
+              {entry.ai && (
+                <div className="flex justify-start">
+                  <div className="max-w-[90%] bg-gray-50 border border-gray-100 p-4 rounded-2xl rounded-bl-md shadow-sm">
+                    <div className="prose prose-sm prose-violet max-w-none">
                       <ReactMarkdown
                         remarkPlugins={[remarkGfm]}
                         components={{
                           code({ node, inline, className, children, ...props }) {
                             const match = /language-(\w+)/.exec(className || '');
                             return !inline && match ? (
-                              <CodeBlock language={match[1]} value={String(children).replace(/\n$/, '')} />
+                              <div className="my-4">
+                                <RenderCodeBlock language={match[1]} value={String(children).replace(/\n$/, '')} />
+                              </div>
                             ) : (
-                              <code className="bg-gray-200 dark:bg-gray-700 text-violet-800 dark:text-violet-200 px-1 rounded" {...props}>
+                              <code className="bg-violet-100 text-violet-800 px-2 py-1 rounded text-sm font-mono" {...props}>
                                 {children}
                               </code>
                             );
                           },
-                          h1: ({ children }) => <h1 className="text-2xl font-bold text-violet-900 dark:text-violet-100 mt-6 mb-4">{children}</h1>,
-                          h2: ({ children }) => <h2 className="text-xl font-semibold text-violet-800 dark:text-violet-200 mt-5 mb-3">{children}</h2>,
-                          h3: ({ children }) => <h3 className="text-lg font-medium text-violet-700 dark:text-violet-300 mt-4 mb-2">{children}</h3>,
-                          p: ({ children }) => <p className="text-gray-700 dark:text-gray-300 mb-4">{children}</p>,
-                          ul: ({ children }) => <ul className="list-disc list-inside text-gray-700 dark:text-gray-300 mb-4">{children}</ul>,
-                          ol: ({ children }) => <ol className="list-decimal list-inside text-gray-700 dark:text-gray-300 mb-4">{children}</ol>,
-                          li: ({ children }) => <li className="mb-1">{children}</li>,
+                          h1: ({ children }) => <h1 className="text-xl font-bold text-gray-900 mt-6 mb-3 first:mt-0">{children}</h1>,
+                          h2: ({ children }) => <h2 className="text-lg font-semibold text-gray-800 mt-5 mb-2">{children}</h2>,
+                          h3: ({ children }) => <h3 className="text-base font-medium text-gray-700 mt-4 mb-2">{children}</h3>,
+                          p: ({ children }) => <p className="text-gray-700 mb-3 leading-relaxed">{children}</p>,
+                          ul: ({ children }) => <ul className="list-disc list-inside text-gray-700 mb-3 space-y-1">{children}</ul>,
+                          ol: ({ children }) => <ol className="list-decimal list-inside text-gray-700 mb-3 space-y-1">{children}</ol>,
+                          li: ({ children }) => <li className="leading-relaxed">{children}</li>,
                           blockquote: ({ children }) => (
-                            <blockquote className="border-l-4 border-violet-500 dark:border-violet-400 pl-4 italic text-gray-600 dark:text-gray-400 mb-4">{children}</blockquote>
+                            <blockquote className="border-l-4 border-violet-300 bg-violet-50 pl-4 py-2 italic text-gray-600 mb-3 rounded-r-lg">{children}</blockquote>
                           ),
-                          table: ({ children }) => <table className="table-auto border-collapse border border-gray-300 dark:border-gray-600 mb-4">{children}</table>,
-                          thead: ({ children }) => <thead className="bg-gray-200 dark:bg-gray-700">{children}</thead>,
-                          th: ({ children }) => <th className="border border-gray-300 dark:border-gray-600 px-4 py-2 text-left">{children}</th>,
-                          td: ({ children }) => <td className="border border-gray-300 dark:border-gray-600 px-4 py-2">{children}</td>,
-                        }}
-                      >
-                        {typedResponse}
-                      </ReactMarkdown>
-                    ) : (
-                      <ReactMarkdown
-                        remarkPlugins={[remarkGfm]}
-                        components={{
-                          code({ node, inline, className, children, ...props }) {
-                            const match = /language-(\w+)/.exec(className || '');
-                            return !inline && match ? (
-                              <CodeBlock language={match[1]} value={String(children).replace(/\n$/, '')} />
-                            ) : (
-                              <code className="bg-gray-200 dark:bg-gray-700 text-violet-800 dark:text-violet-200 px-1 rounded" {...props}>
-                                {children}
-                              </code>
-                            );
-                          },
-                          h1: ({ children }) => <h1 className="text-2xl font-bold text-violet-900 dark:text-violet-100 mt-6 mb-4">{children}</h1>,
-                          h2: ({ children }) => <h2 className="text-xl font-semibold text-violet-800 dark:text-violet-200 mt-5 mb-3">{children}</h2>,
-                          h3: ({ children }) => <h3 className="text-lg font-medium text-violet-700 dark:text-violet-300 mt-4 mb-2">{children}</h3>,
-                          p: ({ children }) => <p className="text-gray-700 dark:text-gray-300 mb-4">{children}</p>,
-                          ul: ({ children }) => <ul className="list-disc list-inside text-gray-700 dark:text-gray-300 mb-4">{children}</ul>,
-                          ol: ({ children }) => <ol className="list-decimal list-inside text-gray-700 dark:text-gray-300 mb-4">{children}</ol>,
-                          li: ({ children }) => <li className="mb-1">{children}</li>,
-                          blockquote: ({ children }) => (
-                            <blockquote className="border-l-4 border-violet-500 dark:border-violet-400 pl-4 italic text-gray-600 dark:text-gray-400 mb-4">{children}</blockquote>
+                          table: ({ children }) => (
+                            <div className="overflow-x-auto mb-4">
+                              <table className="min-w-full border border-gray-200 rounded-lg overflow-hidden">{children}</table>
+                            </div>
                           ),
-                          table: ({ children }) => <table className="table-auto border-collapse border border-gray-300 dark:border-gray-600 mb-4">{children}</table>,
-                          thead: ({ children }) => <thead className="bg-gray-200 dark:bg-gray-700">{children}</thead>,
-                          th: ({ children }) => <th className="border border-gray-300 dark:border-gray-600 px-4 py-2 text-left">{children}</th>,
-                          td: ({ children }) => <td className="border border-gray-300 dark:border-gray-600 px-4 py-2">{children}</td>,
+                          thead: ({ children }) => <thead className="bg-gray-100">{children}</thead>,
+                          th: ({ children }) => <th className="border-b border-gray-200 px-4 py-2 text-left font-medium text-gray-900">{children}</th>,
+                          td: ({ children }) => <td className="border-b border-gray-100 px-4 py-2 text-gray-700">{children}</td>,
                         }}
                       >
                         {entry.ai}
                       </ReactMarkdown>
-                    )}
-                    
-                    {index === chatHistory.length - 1 && isTyping && (
-                      <div className="flex mt-2">
-                        <span className="text-sm text-gray-500">
-                          Typing
-                          <span className="animate-pulse">...</span>
-                        </span>
-                      </div>
-                    )}
+                    </div>
                   </div>
-                </>
+                </div>
               )}
             </div>
           ))}
+
+          {/* Loading Indicator */}
+          {isLoading && (
+            <div className="flex justify-start">
+              <div className="bg-gray-50 border border-gray-100 p-4 rounded-2xl rounded-bl-md shadow-sm">
+                <div className="flex items-center space-x-2">
+                  <div className="flex space-x-1">
+                    <div className="w-2 h-2 bg-violet-400 rounded-full animate-bounce"></div>
+                    <div className="w-2 h-2 bg-violet-400 rounded-full animate-bounce" style={{ animationDelay: '0.1s' }}></div>
+                    <div className="w-2 h-2 bg-violet-400 rounded-full animate-bounce" style={{ animationDelay: '0.2s' }}></div>
+                  </div>
+                  <span className="text-gray-500 text-sm">AI is thinking...</span>
+                </div>
+              </div>
+            </div>
+          )}
         </div>
-        
-        <form onSubmit={handleChatSubmit} className="flex items-center mt-auto">
-          <input
-            type="text"
-            value={chatInput}
-            onChange={(e) => setChatInput(e.target.value)}
-            placeholder="Ask about code review..."
-            className="flex-1 p-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-600 dark:bg-gray-800 dark:text-gray-200"
-            disabled={isTyping}
-            aria-label="Chat input"
-          />
-          <button
-            type="submit"
-            className={`ml-2 ${
-              isTyping ? 'bg-blue-400' : 'bg-blue-600 hover:bg-blue-700'
-            } text-white p-2 rounded-lg transition-colors`}
-            disabled={isTyping || !chatInput.trim()}
-            aria-label="Send chat message"
-          >
-            <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M12 19l9 2-9-18-9 18 9-2zm0 0v-8" />
-            </svg>
-          </button>
-        </form>
+
+        {/* Input Form */}
+        <div className="border-t border-gray-200 bg-gray-50 px-6 py-4">
+          <form onSubmit={handleChatSubmit} className="flex items-end space-x-3">
+            <div className="flex-1">
+              <textarea
+                value={chatInput}
+                onChange={(e) => setChatInput(e.target.value)}
+                placeholder="Ask about code review, explanations, improvements..."
+                className="w-full p-3 border border-gray-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-violet-500 focus:border-transparent resize-none bg-white transition-all duration-200"
+                rows="2"
+                aria-label="Chat input"
+                onKeyDown={(e) => {
+                  if (e.key === 'Enter' && !e.shiftKey) {
+                    e.preventDefault();
+                    handleChatSubmit(e);
+                  }
+                }}
+              />
+              <p className="text-xs text-gray-500 mt-1">Press Enter to send, Shift+Enter for new line</p>
+            </div>
+            <button
+              type="submit"
+              className={`p-3 rounded-xl transition-all duration-200 ${
+                chatInput.trim() && !isLoading
+                  ? 'bg-gradient-to-r from-violet-600 to-purple-600 hover:from-violet-700 hover:to-purple-700 text-white shadow-lg hover:shadow-xl hover:-translate-y-0.5'
+                  : 'bg-gray-300 text-gray-500 cursor-not-allowed'
+              }`}
+              disabled={!chatInput.trim() || isLoading}
+              aria-label="Send chat message"
+            >
+              {isLoading ? (
+                <div className="w-5 h-5 border-2 border-white border-t-transparent rounded-full animate-spin"></div>
+              ) : (
+                <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M12 19l9 2-9-18-9 18 9-2zm0 0v-8" />
+                </svg>
+              )}
+            </button>
+          </form>
+        </div>
       </div>
     </div>
   );

@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
-import PullRequestsList from './pullRequests/PullRequestsList';
-import FileViewer from './FileViewer';
+import PullRequestsList from '../pullRequests/PullRequestsList';
+import FileViewer from '../FileViewer';
 
 function RepoList({ repos, accessToken }) {
   const [filter, setFilter] = useState('');
