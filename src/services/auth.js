@@ -18,7 +18,6 @@ export const handleGitHubLogin = async ({ navigate, setError, setLoading }) => {
     const accessToken = credential.accessToken;
 
     localStorage.setItem('github_access_token', accessToken);
-    console.log('GitHub access token stored in localStorage');
 
     navigate('/dashboard');
   } catch (error) {

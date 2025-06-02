@@ -50,10 +50,10 @@ function App() {
 
           <Routes>
             <Route path="/" element={<WelcomeScreen user={user}/>} />
-            <Route
+            {/* <Route
               path="/login"
               element={!user ? <Login /> : <Navigate to="/dashboard" />}
-            />
+            /> */}
             <Route
               path="/dashboard"
               element={user ? <DashboardPage /> : <Navigate to="/login" />}
