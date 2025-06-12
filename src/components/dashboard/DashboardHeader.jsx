@@ -1,34 +1,34 @@
 export function DashboardHeader({ syncStatus, onSync, onLogout }) {
   return (
-    <div className="bg-white border-b border-gray-200 sticky top-0 z-50 backdrop-blur-sm bg-white/95">
+    <div className="bg-gray-800/80 backdrop-blur-md border-b border-gray-700/50 sticky top-0 z-50">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         <div className="flex justify-between items-center py-6">
           <div className="flex items-center space-x-4">
-            <div className="w-10 h-10 bg-gradient-to-br from-violet-600 to-purple-600 rounded-xl flex items-center justify-center">
+            <div className="w-10 h-10 bg-gradient-to-br from-violet-600 to-purple-600 rounded-xl flex items-center justify-center shadow-lg">
               <svg className="w-6 h-6 text-white" fill="currentColor" viewBox="0 0 20 20">
                 <path fillRule="evenodd" d="M12.316 3.051a1 1 0 01.633 1.265l-4 12a1 1 0 11-1.898-.632l4-12a1 1 0 011.265-.633zM5.707 6.293a1 1 0 010 1.414L3.414 10l2.293 2.293a1 1 0 11-1.414 1.414l-3-3a1 1 0 010-1.414l3-3a1 1 0 011.414 0zm8.586 0a1 1 0 011.414 0l3 3a1 1 0 010 1.414l-3 3a1 1 0 11-1.414-1.414L16.586 10l-2.293-2.293a1 1 0 010-1.414z" clipRule="evenodd" />
               </svg>
             </div>
             <div>
-              <h1 className="text-2xl font-bold bg-gradient-to-r from-gray-900 to-gray-700 bg-clip-text text-transparent">
+              <h1 className="text-2xl font-bold bg-gradient-to-r from-white to-gray-300 bg-clip-text text-transparent">
                 Code Assistant
               </h1>
-              <p className="text-sm text-gray-500">Repository Management Dashboard</p>
+              <p className="text-sm text-gray-400">Repository Management Dashboard</p>
             </div>
           </div>
-          
+         
           <div className="flex items-center space-x-4">
             {syncStatus.lastSynced && (
               <div className="hidden sm:block text-right">
-                <p className="text-xs text-gray-400 uppercase tracking-wide">Last synced</p>
-                <p className="text-sm text-gray-600 font-medium">{syncStatus.lastSynced}</p>
+                <p className="text-xs text-gray-500 uppercase tracking-wide">Last synced</p>
+                <p className="text-sm text-gray-300 font-medium">{syncStatus.lastSynced}</p>
               </div>
             )}
-            
+           
             <button
               onClick={onSync}
               disabled={syncStatus.syncing}
-              className="relative inline-flex items-center px-4 py-2 bg-gradient-to-r from-violet-600 to-violet-700 hover:from-violet-700 hover:to-violet-800 disabled:from-violet-400 disabled:to-violet-400 text-white rounded-xl transition-all duration-200 shadow-lg hover:shadow-xl hover:-translate-y-0.5 font-medium disabled:hover:translate-y-0"
+              className="relative inline-flex items-center px-4 py-2 bg-gradient-to-r from-violet-600 to-violet-700 hover:from-violet-700 hover:to-violet-800 disabled:from-violet-500 disabled:to-violet-600 text-white rounded-xl transition-all duration-200 shadow-lg hover:shadow-xl hover:-translate-y-0.5 font-medium disabled:hover:translate-y-0 disabled:opacity-50"
             >
               {syncStatus.syncing ? (
                 <>
@@ -44,7 +44,7 @@ export function DashboardHeader({ syncStatus, onSync, onLogout }) {
                 </>
               )}
             </button>
-            
+           
             <button
               onClick={onLogout}
               className="inline-flex items-center px-4 py-2 bg-gradient-to-r from-red-500 to-red-600 hover:from-red-600 hover:to-red-700 text-white rounded-xl transition-all duration-200 shadow-lg hover:shadow-xl hover:-translate-y-0.5 font-medium"

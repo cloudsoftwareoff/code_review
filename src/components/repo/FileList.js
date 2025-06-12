@@ -1,17 +1,17 @@
 const FileList = ({ repoContents, onNavigate }) => {
   return (
-    <div className="bg-white rounded-lg shadow-md overflow-hidden p-6">
-      <h3 className="text-lg font-semibold text-violet-800 mb-4">Repository Contents</h3>
+    <div className="bg-gray-800 rounded-lg shadow-md overflow-hidden p-6 dark:bg-gray-800">
+      <h3 className="text-lg font-semibold text-violet-400 mb-4 dark:text-violet-400">Repository Contents</h3>
       <ul className="space-y-2">
         {repoContents.map(item => (
           <li
             key={item.sha}
-            className="flex items-center justify-between p-3 hover:bg-gray-50 rounded-lg cursor-pointer"
+            className="flex items-center justify-between p-3 hover:bg-gray-700 rounded-lg cursor-pointer dark:hover:bg-gray-700"
             onClick={() => onNavigate(item)}
           >
             <div className="flex items-center">
               <svg
-                className="w-5 h-5 mr-2 text-gray-500"
+                className="w-5 h-5 mr-2 text-gray-400 dark:text-gray-400"
                 fill="none"
                 stroke="currentColor"
                 viewBox="0 0 24 24"
@@ -23,14 +23,14 @@ const FileList = ({ repoContents, onNavigate }) => {
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l4.414 4.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
                 )}
               </svg>
-              <span className="text-gray-800">{item.name}</span>
+              <span className="text-gray-300 dark:text-gray-300">{item.name}</span>
             </div>
-            <span className="text-sm text-gray-500">{item.type === 'dir' ? 'Directory' : 'File'}</span>
+            <span className="text-sm text-gray-400 dark:text-gray-400">{item.type === 'dir' ? 'Directory' : 'File'}</span>
           </li>
         ))}
       </ul>
       {repoContents.length === 0 && (
-        <p className="text-gray-500 text-center">No contents found in this directory.</p>
+        <p className="text-gray-400 text-center dark:text-gray-400">No contents found in this directory.</p>
       )}
     </div>
   );
