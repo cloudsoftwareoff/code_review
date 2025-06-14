@@ -24,31 +24,10 @@ const Pricing = () => {
             <div className="absolute inset-0 bg-gradient-to-r from-blue-400 via-purple-500 to-indigo-500 rounded-full blur-3xl opacity-20 dark:opacity-30 animate-pulse-slow"></div>
           </div>
 
-          {/* Enhanced stars background */}
-          <div className="absolute top-1/2 left-1/2 w-[60rem] -translate-x-1/2 -translate-y-1/2 pointer-events-none">
-            <img 
-              src={stars} 
-              className="w-full opacity-60 dark:opacity-40 animate-spin-very-slow filter dark:brightness-125" 
-              width={950} 
-              height={400} 
-              alt="Stars" 
-            />
-          </div>
+     
 
           {/* Floating particles */}
-          <div className="absolute inset-0 pointer-events-none">
-            {[...Array(8)].map((_, i) => (
-              <div
-                key={i}
-                className={`absolute w-1 h-1 bg-blue-400 dark:bg-blue-300 rounded-full opacity-40 animate-float-${(i % 3) + 1}`}
-                style={{
-                  top: `${10 + (i * 8)}%`,
-                  left: `${15 + (i * 9)}%`,
-                  animationDelay: `${i * 0.8}s`
-                }}
-              ></div>
-            ))}
-          </div>
+       
         </div>
 
         {/* Enhanced heading with better styling */}

@@ -77,8 +77,6 @@ const Hero = () => {
             />
           </div>
 
-          {/* Additional dark mode enhancements */}
-          <BackgroundCircles className="opacity-70 dark:opacity-30" />
         </div>
       </div>
 
