@@ -1,6 +1,6 @@
 {
   "name": "code_review",
-  "version": "0.1.9",
+  "version": "0.2.0",
   "private": true,
   "dependencies": {
     "@google/generative-ai": "^0.24.1",
