@@ -7,6 +7,7 @@ import Chatbot from './components/Chatbot';
 import './App.css';
 import { auth } from './lib/firebaseClient';
 import { DashboardPage } from './pages/Dashboard';
+import LandingPage from './LandingPage';
 export const CodeReviewContext = createContext();
 export const useCodeReviewContext = () => useContext(CodeReviewContext);
 
@@ -49,7 +50,7 @@ function App() {
           <Chatbot isOpen={isChatOpen} onClose={() => setIsChatOpen(false)} />
 
           <Routes>
-            <Route path="/" element={<WelcomeScreen user={user}/>} />
+            <Route path="/" element={<LandingPage user={user}/>} />
             {/* <Route
               path="/login"
               element={!user ? <Login /> : <Navigate to="/dashboard" />}
